@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-/* ============ BASE ============ */
 body {
   margin: 0;
   font-family: 'Segoe UI', system-ui, sans-serif;
@@ -8,7 +7,6 @@ body {
   color: #2c2c2c;
 }
 
-/* ============ NAVBAR ============ */
 nav {
   background-color: #2d2b4a;
   padding: 16px 24px;
@@ -55,7 +53,6 @@ nav button:hover {
   transform: translateY(-1px);
 }
 
-/* ============ TYPOGRAPHY ============ */
 h1 {
   color: #2d2b4a;
   font-size: 28px;
@@ -81,7 +78,6 @@ p {
   font-style: italic;
 }
 
-/* ============ STATS GRID ============ */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -152,7 +148,6 @@ p {
   font-size: 24px;
 }
 
-/* ============ FORMS ============ */
 form {
   background: white;
   padding: 24px;
@@ -193,7 +188,6 @@ input:focus, select:focus {
   background: white;
 }
 
-/* ============ BUTTONS ============ */
 button {
   padding: 10px 22px;
   border: none;
@@ -246,7 +240,6 @@ button[type="submit"]:active {
   box-shadow: 0 3px 8px rgba(184,115,122,0.3);
 }
 
-/* ============ PRODUCT GRID ============ */
 .product-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -353,7 +346,6 @@ button[type="submit"]:active {
   display: block;
 }
 
-/* ============ TABLE ============ */
 table {
   width: 100%;
   background: white;
@@ -401,7 +393,6 @@ tbody tr:hover {
   color: #b8860b;
 }
 
-/* ============ DASHBOARD GRID ============ */
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -421,7 +412,6 @@ tbody tr:hover {
   box-shadow: 0 6px 20px rgba(0,0,0,0.08);
 }
 
-/* ============ BAR CHART ============ */
 .bar-chart {
   display: flex;
   flex-direction: column;
@@ -466,7 +456,6 @@ tbody tr:hover {
   flex-shrink: 0;
 }
 
-/* ============ RESPONSIVE ============ */
 @media (max-width: 768px) {
   nav {
     flex-wrap: wrap;

@@ -1,6 +1,5 @@
 # InventoManego — Inventory Management System
-
-A full-stack web application for real-time inventory tracking, order management, supplier management, and warehouse operations. Built with React + Vite frontend and Node.js + Express + SQLite backend.
+A web-based system to help businesses track, manage, and optimize inventory in real time. Designed for retailers, restaurants, and multi-outlet businesses, it ensures accurate stock visibility, faster decision-making, and automation across daily operations
 
 ## Features
 

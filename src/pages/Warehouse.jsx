@@ -1,36 +1,37 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
 import { useNotification } from '../context/NotificationContext'
+import useSocket from '../hooks/useSocket'
+import api from '../api'
 
 export default function Warehouse() {
-  const [warehouses, setWarehouses] = useState([
-    { id: 1, name: 'Central Warehouse', location: 'Mumbai', capacity: 85, manager: 'Amit Verma', stockItems: 1240, status: 'Active' },
-    { id: 2, name: 'East Hub', location: 'Kolkata', capacity: 62, manager: 'Sunita Das', stockItems: 876, status: 'Active' },
-    { id: 3, name: 'West Distribution', location: 'Ahmedabad', capacity: 45, manager: 'Rohit Shah', stockItems: 543, status: 'Active' },
-    { id: 4, name: 'South Fulfillment', location: 'Chennai', capacity: 91, manager: 'Lakshmi Nair', stockItems: 1567, status: 'Active' },
-    { id: 5, name: 'North Storage', location: 'Delhi', capacity: 32, manager: 'Vikram Singh', stockItems: 389, status: 'Inactive' },
-  ])
+  const [warehouses, setWarehouses] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [editWh, setEditWh] = useState(null)
   const [transferFrom, setTransferFrom] = useState(null)
-  const { addToast } = useNotification()
-
-  const [form, setForm] = useState({ name: '', location: '', capacity: 50, manager: '', stockItems: 0, status: 'Active' })
+  const [form, setForm] = useState({ name: '', location: '', capacity: 50, manager: '', stock_items: 0, status: 'Active' })
   const [errors, setErrors] = useState({})
-
   const [transferModal, setTransferModal] = useState(false)
   const [transfer, setTransfer] = useState({ fromId: '', toId: '', itemName: '', qty: '' })
+  const { addToast } = useNotification()
+
+  const loadWarehouses = () => {
+    api.get('/warehouses').then(({ data }) => setWarehouses(data)).catch(() => {})
+  }
+
+  useEffect(() => { loadWarehouses() }, [])
+  useSocket('stockUpdate', () => { loadWarehouses() })
 
   const openAdd = () => {
     setEditWh(null)
-    setForm({ name: '', location: '', capacity: 50, manager: '', stockItems: 0, status: 'Active' })
+    setForm({ name: '', location: '', capacity: 50, manager: '', stock_items: 0, status: 'Active' })
     setErrors({})
     setShowModal(true)
   }
 
   const openEdit = (w) => {
     setEditWh(w)
-    setForm({ name: w.name, location: w.location, capacity: w.capacity, manager: w.manager, stockItems: w.stockItems, status: w.status })
+    setForm({ name: w.name, location: w.location, capacity: w.capacity, manager: w.manager, stock_items: w.stock_items, status: w.status })
     setErrors({})
     setShowModal(true)
   }
@@ -50,66 +51,73 @@ export default function Warehouse() {
     return Object.keys(errs).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!validate()) return
-
-    if (editWh) {
-      setWarehouses(prev => prev.map(w => w.id === editWh.id ? { ...w, ...form, capacity: Number(form.capacity), stockItems: Number(form.stockItems) } : w))
-      addToast(`✏️ ${form.name} updated`, 'success')
-    } else {
-      setWarehouses(prev => [...prev, { id: Date.now(), ...form, capacity: Number(form.capacity), stockItems: Number(form.stockItems) }])
-      addToast(`✅ ${form.name} added`, 'success')
-    }
-    setShowModal(false)
-  }
-
-  const deleteWh = (w) => {
-    if (window.confirm(`Delete ${w.name}?`)) {
-      setWarehouses(prev => prev.filter(x => x.id !== w.id))
-      addToast(`🗑️ ${w.name} removed`, 'error')
+    try {
+      if (editWh) {
+        await api.put(`/warehouses/${editWh.id}`, form)
+        addToast(`${form.name} updated`, 'success')
+      } else {
+        await api.post('/warehouses', form)
+        addToast(`${form.name} added`, 'success')
+      }
+      setShowModal(false)
+      loadWarehouses()
+    } catch {
+      addToast('Operation failed', 'error')
     }
   }
 
-  const toggleStatus = (id) => {
-    setWarehouses(prev => prev.map(w => {
-      if (w.id !== id) return w
-      const ns = w.status === 'Active' ? 'Inactive' : 'Active'
-      addToast(`🔄 ${w.name} is now ${ns}`, 'info')
-      return { ...w, status: ns }
-    }))
+  const deleteWh = async (w) => {
+    if (!window.confirm(`Delete ${w.name}?`)) return
+    try {
+      await api.delete(`/warehouses/${w.id}`)
+      addToast(`${w.name} removed`, 'success')
+      loadWarehouses()
+    } catch {
+      addToast('Delete failed', 'error')
+    }
   }
 
-  const handleTransfer = (e) => {
+  const toggleStatus = async (id) => {
+    const w = warehouses.find(x => x.id === id)
+    if (!w) return
+    const ns = w.status === 'Active' ? 'Inactive' : 'Active'
+    try {
+      await api.put(`/warehouses/${id}`, { ...w, status: ns })
+      addToast(`${w.name} is now ${ns}`, 'info')
+      loadWarehouses()
+    } catch {
+      addToast('Status change failed', 'error')
+    }
+  }
+
+  const handleTransfer = async (e) => {
     e.preventDefault()
     if (transfer.fromId === transfer.toId) {
-      addToast('⚠️ Cannot transfer to the same warehouse', 'error')
+      addToast('Cannot transfer to the same warehouse', 'error')
       return
     }
-    const from = warehouses.find(w => w.id === transfer.fromId)
-    const to = warehouses.find(w => w.id === Number(transfer.toId))
-    if (!from || !to || !transfer.itemName.trim() || !transfer.qty) return
-
-    const qty = Number(transfer.qty)
-    setWarehouses(prev => prev.map(w => {
-      if (w.id === from.id) return { ...w, stockItems: w.stockItems - qty }
-      if (w.id === to.id) return { ...w, stockItems: w.stockItems + qty }
-      return w
-    }))
-    addToast(`📦 ${transfer.itemName} (x${qty}) transferred from ${from.name} to ${to.name}`, 'success')
-    setTransferModal(false)
+    try {
+      await api.post('/warehouses/transfer', {
+        fromId: Number(transfer.fromId),
+        toId: Number(transfer.toId),
+        itemName: transfer.itemName,
+        qty: Number(transfer.qty)
+      })
+      addToast(`Transfer complete!`, 'success')
+      setTransferModal(false)
+      loadWarehouses()
+    } catch (err) {
+      addToast(err.response?.data?.error || 'Transfer failed', 'error')
+    }
   }
 
   const capacityColor = (c) => {
     if (c >= 85) return '#e53e3e'
     if (c >= 60) return '#dd6b20'
     return '#2f855a'
-  }
-
-  const capacityBg = (c) => {
-    if (c >= 85) return '#fed7d7'
-    if (c >= 60) return '#feebc8'
-    return '#c6f6d5'
   }
 
   return (
@@ -122,7 +130,6 @@ export default function Warehouse() {
       <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 25, flexWrap: 'wrap', justifyContent: 'center' }}>
         {warehouses.map(w => {
           const color = capacityColor(w.capacity)
-          const bg = capacityBg(w.capacity)
           return (
             <div key={w.id} className="card" style={{
               padding: '25px', textAlign: 'left', width: 320, position: 'relative',
@@ -132,10 +139,8 @@ export default function Warehouse() {
                 <button onClick={() => openEdit(w)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: 2 }}>✏️</button>
                 <button onClick={() => deleteWh(w)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: 2 }}>🗑️</button>
               </div>
-
               <h3 style={{ color: '#1a365d', margin: '0 0 6px', fontSize: 18 }}>{w.name}</h3>
               <p style={{ fontSize: 13, color: '#718096', margin: '0 0 15px' }}>📍 {w.location}</p>
-
               <div style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
                   <span style={{ color: '#555' }}>Capacity</span>
@@ -145,12 +150,10 @@ export default function Warehouse() {
                   <div style={{ width: `${w.capacity}%`, height: '100%', background: color, borderRadius: 5, transition: 'width 0.8s ease' }}></div>
                 </div>
               </div>
-
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 13, marginBottom: 12 }}>
                 <div><span style={{ color: '#888' }}>Manager:</span><br /><span style={{ fontWeight: 600 }}>{w.manager}</span></div>
-                <div><span style={{ color: '#888' }}>Stock Items:</span><br /><span style={{ fontWeight: 600 }}>{w.stockItems.toLocaleString()}</span></div>
+                <div><span style={{ color: '#888' }}>Stock Items:</span><br /><span style={{ fontWeight: 600 }}>{w.stock_items?.toLocaleString()}</span></div>
               </div>
-
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                 <span style={{
                   padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600,
@@ -181,27 +184,24 @@ export default function Warehouse() {
             ].map(f => (
               <div key={f.key}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1a365d', marginBottom: 4 }}>{f.label}</label>
-                <input
-                  value={form[f.key]}
-                  onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                <input value={form[f.key]} onChange={e => setForm({ ...form, [f.key]: e.target.value })}
                   style={{
                     width: '100%', padding: '10px 12px', borderRadius: 6,
                     border: errors[f.key] ? '2px solid #e53e3e' : '1px solid #e2e8f0',
                     fontSize: 14, outline: 'none'
-                  }}
-                />
+                  }} />
                 {errors[f.key] && <span style={{ color: '#e53e3e', fontSize: 12 }}>{errors[f.key]}</span>}
               </div>
             ))}
             <div>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1a365d', marginBottom: 4 }}>Capacity % ({form.capacity}%)</label>
               <input type="range" min="0" max="100" value={form.capacity}
-                onChange={e => setForm({ ...form, capacity: e.target.value })} style={{ width: '100%' }} />
+                onChange={e => setForm({ ...form, capacity: Number(e.target.value) })} style={{ width: '100%' }} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1a365d', marginBottom: 4 }}>Stock Items Count</label>
-              <input type="number" min="0" value={form.stockItems}
-                onChange={e => setForm({ ...form, stockItems: e.target.value })}
+              <input type="number" min="0" value={form.stock_items}
+                onChange={e => setForm({ ...form, stock_items: Number(e.target.value) })}
                 style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid #e2e8f0', fontSize: 14, outline: 'none' }} />
             </div>
           </div>

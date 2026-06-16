@@ -1,10 +1,41 @@
 import { Link, useLocation } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { useNotification } from '../context/NotificationContext'
 
 export default function Navbar() {
   const { pathname } = useLocation()
+  const { user, logout } = useAuth()
   const { addToast } = useNotification()
   const isActive = (path) => pathname === path
+
+  const handleLogout = () => {
+    logout()
+    addToast('Logged out successfully', 'info')
+  }
+
+  const userLinks = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <button
+        onClick={() => addToast('🔔 You have 3 new low stock alerts!', 'error')}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#cbd5e0' }}
+        title="Notifications"
+      >🔔</button>
+      <span style={{ color: '#cbd5e0', fontSize: 14, fontWeight: 600 }}>{user?.name}</span>
+      <button onClick={handleLogout}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, color: '#cbd5e0', fontSize: '0.9rem' }}
+      >Logout</button>
+    </div>
+  )
+
+  const guestLinks = (
+    <div style={{ display: 'flex', gap: 15, alignItems: 'center' }}>
+      <Link to="/login" style={{ color: '#cbd5e0', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>Sign In</Link>
+      <Link to="/signup" style={{
+        color: 'white', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem',
+        background: '#2b6cb0', padding: '8px 18px', borderRadius: 8
+      }}>Get Started</Link>
+    </div>
+  )
 
   return (
     <nav className="navbar">
@@ -24,16 +55,7 @@ export default function Navbar() {
         <li><Link to="/warehouse" style={linkStyle(isActive('/warehouse'))}>WAREHOUSE</Link></li>
       </ul>
       <div className="actions">
-        <Link to="/" style={{ color: '#cbd5e0', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>Get Started</Link>
-        <button
-          onClick={() => addToast('🔔 You have 3 new low stock alerts!', 'error')}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#cbd5e0' }}
-          title="Notifications"
-        >🔔</button>
-        <button
-          onClick={() => addToast('👋 Welcome back!', 'success')}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, color: '#cbd5e0', fontSize: '0.9rem' }}
-        >Login</button>
+        {user ? userLinks : guestLinks}
       </div>
     </nav>
   )

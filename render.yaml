@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: invento-manego-server
+    runtime: node
+    repo: https://github.com/kandhwayanushka-hue/ProjectSem02
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    plan: free

@@ -1,47 +1,32 @@
 # InventoManego — Inventory Management System
-A web-based system to help businesses track, manage, and optimize inventory in real time. Designed for retailers, restaurants, and multi-outlet businesses, it ensures accurate stock visibility, faster decision-making, and automation across daily operations
+
+A web-based system to help businesses track, manage, and optimize inventory in real time. Designed for retailers, restaurants, and multi-outlet businesses, it ensures accurate stock visibility, faster decision-making, and automation across daily operations.
 
 ## Features
 
-### Stock & Product Management
-- Full CRUD for products with search, filter by category, and status tracking (In Stock / Low Stock / Out of Stock)
-- Real-time stock updates via WebSocket (Socket.io)
-- Barcode/QR code scanning using device camera (`html5-qrcode`)
+- **Real-time stock tracking** — Live inventory updates across all warehouses via WebSocket (Socket.io)
+- **Barcode/QR code automation** — Scan items using device camera (`html5-qrcode`) for rapid product lookup and entry
+- **Order management** — Purchase & sales order lifecycle (Pending → Processing → Shipped → Delivered) with one-click status advancement
+- **Mobile-first workflows** — Fully responsive design with hamburger navigation, optimized for phones and tablets
+- **Alerts for low stock/expiry** — Dashboard alerts for low stock and out-of-stock items with reorder actions
+- **Analytics dashboard with reports** — Monthly revenue bar chart, stock valuation, order history, supplier performance, and CSV export
 
-### Order Management
-- Order listing with status filter tabs (Pending → Processing → Shipped → Delivered)
-- One-click status advancement with real-time UI updates
-- Order detail modal with estimated delivery dates
+## Technical Highlights
 
-### Supplier Management
-- Add, edit, delete suppliers with validation
-- Activate/deactivate toggle with visual opacity feedback
-- Rating slider and star display
+- **Database integration** — SQLite backend with schema for products, suppliers, orders, warehouses, stock transfers, and user accounts
+- **API support** — RESTful API ready for e-commerce and POS system integration (all CRUD endpoints)
+- **Role-based access control** — Admin (`demo@example.com`) vs regular user (`user@example.com`): delete/add actions restricted to admins
+- **Scalable architecture** — Designed for multiple outlets/warehouses with stock transfer between locations
 
-### Warehouse Management
-- Add, edit, delete warehouses with capacity bars (color-coded: green/yellow/red)
-- Stock transfer between warehouses with audit trail
-- Activate/deactivate toggle
+## Benefits
 
-### Dashboard & Analytics
-- Animated stat counters (products, low stock, orders, suppliers, revenue)
-- Monthly revenue bar chart
-- Recent orders table with view all toggle
-- Low stock alerts with reorder button
-- Top-selling products table
+- Prevents stockouts and reduces waste
+- Improves decision-making with accurate data
+- Saves time through automation
+- Enhances customer satisfaction
 
-### Reports
-- 5 report tabs: Sales Summary, Stock Valuation, Order History, Low Stock Report, Supplier Performance
-- Summary stat cards with computed metrics
-- Date range filter
-- CSV download for each report
+---
 
-### Authentication
-- Login/signup with JWT tokens (persisted via localStorage)
-- Protected routes (redirect to login if unauthenticated)
-- Demo credentials pre-loaded
+**Check out the live app:** [https://invento-manego.vercel.app](https://invento-manego.vercel.app)
 
-## Live Demo
-
-- **Frontend:** https://invento-manego.vercel.app
 

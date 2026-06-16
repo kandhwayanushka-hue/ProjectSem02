@@ -95,7 +95,9 @@ const seed = () => {
   const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get().c
   if (userCount === 0) {
     const hash = bcrypt.hashSync('password123', 10)
-    db.prepare('INSERT INTO users (name, email, password) VALUES (?, ?, ?)').run('Admin User', 'demo@example.com', hash)
+    db.prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)').run('Admin User', 'demo@example.com', hash, 'admin')
+    const userHash = bcrypt.hashSync('user123', 10)
+    db.prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)').run('Regular User', 'user@example.com', userHash, 'user')
   }
 
   const prodCount = db.prepare('SELECT COUNT(*) as c FROM products').get().c
@@ -174,6 +176,13 @@ const optionalAuth = (req, res, next) => {
   next()
 }
 
+const adminAuth = (req, res, next) => {
+  auth(req, res, () => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin access required' })
+    next()
+  })
+}
+
 // ---------- Auth Routes ----------
 app.post('/api/auth/signup', (req, res) => {
   const { name, email, password } = req.body
@@ -181,7 +190,7 @@ app.post('/api/auth/signup', (req, res) => {
   try {
     const hash = bcrypt.hashSync(password, 10)
     const result = db.prepare('INSERT INTO users (name, email, password) VALUES (?, ?, ?)').run(name, email, hash)
-    const token = jwt.sign({ id: result.lastInsertRowid, name, email }, JWT_SECRET, { expiresIn: '7d' })
+    const token = jwt.sign({ id: result.lastInsertRowid, name, email, role: 'user' }, JWT_SECRET, { expiresIn: '7d' })
     res.json({ token, user: { id: result.lastInsertRowid, name, email, role: 'user' } })
   } catch (e) {
     if (e.message.includes('UNIQUE')) return res.status(400).json({ error: 'Email already registered' })
@@ -239,7 +248,7 @@ app.put('/api/products/:id', auth, (req, res) => {
   res.json({ success: true })
 })
 
-app.delete('/api/products/:id', auth, (req, res) => {
+app.delete('/api/products/:id', adminAuth, (req, res) => {
   db.prepare('DELETE FROM products WHERE id = ?').run(req.params.id)
   io.emit('stockUpdate', { type: 'product_deleted' })
   res.json({ success: true })
@@ -276,7 +285,7 @@ app.post('/api/orders', auth, (req, res) => {
   res.json({ order_id: oid, success: true })
 })
 
-app.delete('/api/orders/:id', auth, (req, res) => {
+app.delete('/api/orders/:id', adminAuth, (req, res) => {
   db.prepare('DELETE FROM orders WHERE id = ?').run(req.params.id)
   io.emit('orderUpdate', { type: 'order_deleted' })
   res.json({ success: true })
@@ -302,7 +311,7 @@ app.put('/api/suppliers/:id', auth, (req, res) => {
   res.json({ success: true })
 })
 
-app.delete('/api/suppliers/:id', auth, (req, res) => {
+app.delete('/api/suppliers/:id', adminAuth, (req, res) => {
   db.prepare('DELETE FROM suppliers WHERE id = ?').run(req.params.id)
   res.json({ success: true })
 })
@@ -328,7 +337,7 @@ app.put('/api/warehouses/:id', auth, (req, res) => {
   res.json({ success: true })
 })
 
-app.delete('/api/warehouses/:id', auth, (req, res) => {
+app.delete('/api/warehouses/:id', adminAuth, (req, res) => {
   db.prepare('DELETE FROM warehouses WHERE id = ?').run(req.params.id)
   res.json({ success: true })
 })

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
 import { useNotification } from '../context/NotificationContext'
+import { useAuth } from '../context/AuthContext'
 import api from '../api'
 
 export default function Suppliers() {
@@ -9,6 +10,8 @@ export default function Suppliers() {
   const [editSupplier, setEditSupplier] = useState(null)
   const [form, setForm] = useState({ name: '', contact: '', email: '', phone: '', lead_time: '', rating: 5, status: 'Active' })
   const [errors, setErrors] = useState({})
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const { addToast } = useNotification()
 
   const loadSuppliers = () => {
@@ -93,7 +96,7 @@ export default function Suppliers() {
     <section style={{ padding: '40px', background: '#f7fafc', minHeight: '80vh' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: 1200, margin: '0 auto 30px' }}>
         <h2 className="section-title" style={{ margin: 0 }}>Suppliers</h2>
-        <button onClick={openAdd} className="learn-btn" style={{ padding: '12px 24px', fontSize: 14 }}>+ Add Supplier</button>
+        {isAdmin && <button onClick={openAdd} className="learn-btn" style={{ padding: '12px 24px', fontSize: 14 }}>+ Add Supplier</button>}
       </div>
 
       <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 25, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -104,7 +107,7 @@ export default function Suppliers() {
           }}>
             <div style={{ position: 'absolute', top: 15, right: 15, display: 'flex', gap: 8 }}>
               <button onClick={() => openEdit(s)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>✏️</button>
-              <button onClick={() => deleteSupplier(s)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>🗑️</button>
+              {isAdmin && <button onClick={() => deleteSupplier(s)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>🗑️</button>}
             </div>
             <h3 style={{ color: '#1a365d', margin: '0 0 12px', fontSize: 18 }}>{s.name}</h3>
             <p style={{ margin: '4px 0', fontSize: 14, color: '#555' }}> {s.contact}</p>

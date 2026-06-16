@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
 import { useNotification } from '../context/NotificationContext'
+import { useAuth } from '../context/AuthContext'
 import useSocket from '../hooks/useSocket'
 import api from '../api'
 
@@ -13,6 +14,8 @@ export default function Warehouse() {
   const [errors, setErrors] = useState({})
   const [transferModal, setTransferModal] = useState(false)
   const [transfer, setTransfer] = useState({ fromId: '', toId: '', itemName: '', qty: '' })
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const { addToast } = useNotification()
 
   const loadWarehouses = () => {
@@ -124,7 +127,7 @@ export default function Warehouse() {
     <section style={{ padding: '40px', background: '#f7fafc', minHeight: '80vh' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: 1200, margin: '0 auto 30px' }}>
         <h2 className="section-title" style={{ margin: 0 }}>Warehouses</h2>
-        <button onClick={openAdd} className="learn-btn" style={{ padding: '12px 24px', fontSize: 14 }}>+ Add Warehouse</button>
+        {isAdmin && <button onClick={openAdd} className="learn-btn" style={{ padding: '12px 24px', fontSize: 14 }}>+ Add Warehouse</button>}
       </div>
 
       <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 25, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -137,7 +140,7 @@ export default function Warehouse() {
             }}>
               <div style={{ position: 'absolute', top: 15, right: 15, display: 'flex', gap: 8 }}>
                 <button onClick={() => openEdit(w)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: 2 }}>✏️</button>
-                <button onClick={() => deleteWh(w)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: 2 }}>🗑️</button>
+                {isAdmin && <button onClick={() => deleteWh(w)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: 2 }}>🗑️</button>}
               </div>
               <h3 style={{ color: '#1a365d', margin: '0 0 6px', fontSize: 18 }}>{w.name}</h3>
               <p style={{ fontSize: 13, color: '#718096', margin: '0 0 15px' }}>📍 {w.location}</p>

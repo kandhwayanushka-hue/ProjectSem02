@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
 import BarcodeScanner from '../components/BarcodeScanner'
 import { useNotification } from '../context/NotificationContext'
+import { useAuth } from '../context/AuthContext'
 import api from '../api'
 
 export default function Products() {
@@ -13,6 +14,8 @@ export default function Products() {
   const [showForm, setShowForm] = useState(false)
   const [editProd, setEditProd] = useState(null)
   const [form, setForm] = useState({ name: '', sku: '', qty: 0, price: 0, category: '', min_qty: 10 })
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const { addToast } = useNotification()
 
   const loadProducts = () => {
@@ -118,7 +121,7 @@ export default function Products() {
             padding: '12px 20px', borderRadius: 8, border: '2px solid #2b6cb0',
             background: 'white', color: '#2b6cb0', cursor: 'pointer', fontWeight: 600, fontSize: 14
           }}>Scan Barcode</button>
-        <button onClick={openAdd} className="learn-btn" style={{ padding: '12px 24px', fontSize: 14 }}>+ Add Product</button>
+        {isAdmin && <button onClick={openAdd} className="learn-btn" style={{ padding: '12px 24px', fontSize: 14 }}>+ Add Product</button>}
       </div>
 
       <div style={{ maxWidth: 1000, margin: '0 auto', background: 'white', borderRadius: 10, overflow: 'hidden', boxShadow: '0 5px 15px rgba(0,0,0,0.1)' }}>
@@ -155,8 +158,10 @@ export default function Products() {
                 <td style={{ padding: '15px', textAlign: 'center' }}>
                   <button onClick={(e) => { e.stopPropagation(); openEdit(p) }}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18 }}>✏️</button>
-                  <button onClick={(e) => { e.stopPropagation(); deleteProd(p) }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18 }}>🗑️</button>
+                  {isAdmin && (
+                    <button onClick={(e) => { e.stopPropagation(); deleteProd(p) }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18 }}>🗑️</button>
+                  )}
                 </td>
               </tr>
             ))}

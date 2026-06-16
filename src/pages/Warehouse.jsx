@@ -1,36 +1,262 @@
+import { useState } from 'react'
+import Modal from '../components/Modal'
+import { useNotification } from '../context/NotificationContext'
+
 export default function Warehouse() {
-  const warehouses = [
-    { name: 'Central Warehouse', location: 'Mumbai', capacity: '85%', status: 'Active' },
-    { name: 'East Hub', location: 'Kolkata', capacity: '62%', status: 'Active' },
-    { name: 'West Distribution', location: 'Ahmedabad', capacity: '45%', status: 'Active' },
-    { name: 'South Fulfillment', location: 'Chennai', capacity: '91%', status: 'Active' },
-  ]
+  const [warehouses, setWarehouses] = useState([
+    { id: 1, name: 'Central Warehouse', location: 'Mumbai', capacity: 85, manager: 'Amit Verma', stockItems: 1240, status: 'Active' },
+    { id: 2, name: 'East Hub', location: 'Kolkata', capacity: 62, manager: 'Sunita Das', stockItems: 876, status: 'Active' },
+    { id: 3, name: 'West Distribution', location: 'Ahmedabad', capacity: 45, manager: 'Rohit Shah', stockItems: 543, status: 'Active' },
+    { id: 4, name: 'South Fulfillment', location: 'Chennai', capacity: 91, manager: 'Lakshmi Nair', stockItems: 1567, status: 'Active' },
+    { id: 5, name: 'North Storage', location: 'Delhi', capacity: 32, manager: 'Vikram Singh', stockItems: 389, status: 'Inactive' },
+  ])
+  const [showModal, setShowModal] = useState(false)
+  const [editWh, setEditWh] = useState(null)
+  const [transferFrom, setTransferFrom] = useState(null)
+  const { addToast } = useNotification()
+
+  const [form, setForm] = useState({ name: '', location: '', capacity: 50, manager: '', stockItems: 0, status: 'Active' })
+  const [errors, setErrors] = useState({})
+
+  const [transferModal, setTransferModal] = useState(false)
+  const [transfer, setTransfer] = useState({ fromId: '', toId: '', itemName: '', qty: '' })
+
+  const openAdd = () => {
+    setEditWh(null)
+    setForm({ name: '', location: '', capacity: 50, manager: '', stockItems: 0, status: 'Active' })
+    setErrors({})
+    setShowModal(true)
+  }
+
+  const openEdit = (w) => {
+    setEditWh(w)
+    setForm({ name: w.name, location: w.location, capacity: w.capacity, manager: w.manager, stockItems: w.stockItems, status: w.status })
+    setErrors({})
+    setShowModal(true)
+  }
+
+  const openTransfer = (w) => {
+    setTransferFrom(w)
+    setTransfer({ fromId: w.id, toId: '', itemName: '', qty: '' })
+    setTransferModal(true)
+  }
+
+  const validate = () => {
+    const errs = {}
+    if (!form.name.trim()) errs.name = 'Name is required'
+    if (!form.location.trim()) errs.location = 'Location is required'
+    if (!form.manager.trim()) errs.manager = 'Manager name is required'
+    setErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!validate()) return
+
+    if (editWh) {
+      setWarehouses(prev => prev.map(w => w.id === editWh.id ? { ...w, ...form, capacity: Number(form.capacity), stockItems: Number(form.stockItems) } : w))
+      addToast(`✏️ ${form.name} updated`, 'success')
+    } else {
+      setWarehouses(prev => [...prev, { id: Date.now(), ...form, capacity: Number(form.capacity), stockItems: Number(form.stockItems) }])
+      addToast(`✅ ${form.name} added`, 'success')
+    }
+    setShowModal(false)
+  }
+
+  const deleteWh = (w) => {
+    if (window.confirm(`Delete ${w.name}?`)) {
+      setWarehouses(prev => prev.filter(x => x.id !== w.id))
+      addToast(`🗑️ ${w.name} removed`, 'error')
+    }
+  }
+
+  const toggleStatus = (id) => {
+    setWarehouses(prev => prev.map(w => {
+      if (w.id !== id) return w
+      const ns = w.status === 'Active' ? 'Inactive' : 'Active'
+      addToast(`🔄 ${w.name} is now ${ns}`, 'info')
+      return { ...w, status: ns }
+    }))
+  }
+
+  const handleTransfer = (e) => {
+    e.preventDefault()
+    if (transfer.fromId === transfer.toId) {
+      addToast('⚠️ Cannot transfer to the same warehouse', 'error')
+      return
+    }
+    const from = warehouses.find(w => w.id === transfer.fromId)
+    const to = warehouses.find(w => w.id === Number(transfer.toId))
+    if (!from || !to || !transfer.itemName.trim() || !transfer.qty) return
+
+    const qty = Number(transfer.qty)
+    setWarehouses(prev => prev.map(w => {
+      if (w.id === from.id) return { ...w, stockItems: w.stockItems - qty }
+      if (w.id === to.id) return { ...w, stockItems: w.stockItems + qty }
+      return w
+    }))
+    addToast(`📦 ${transfer.itemName} (x${qty}) transferred from ${from.name} to ${to.name}`, 'success')
+    setTransferModal(false)
+  }
+
+  const capacityColor = (c) => {
+    if (c >= 85) return '#e53e3e'
+    if (c >= 60) return '#dd6b20'
+    return '#2f855a'
+  }
+
+  const capacityBg = (c) => {
+    if (c >= 85) return '#fed7d7'
+    if (c >= 60) return '#feebc8'
+    return '#c6f6d5'
+  }
 
   return (
     <section style={{ padding: '40px', background: '#f7fafc', minHeight: '80vh' }}>
-      <h2 className="section-title">Warehouses</h2>
-      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', background: 'white', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 5px 15px rgba(0,0,0,0.1)' }}>
-          <thead>
-            <tr style={{ background: '#1a365d', color: 'white' }}>
-              <th style={{ padding: '15px', textAlign: 'left' }}>Name</th>
-              <th style={{ padding: '15px', textAlign: 'left' }}>Location</th>
-              <th style={{ padding: '15px', textAlign: 'left' }}>Capacity</th>
-              <th style={{ padding: '15px', textAlign: 'left' }}>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {warehouses.map((w, i) => (
-              <tr key={i} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                <td style={{ padding: '15px', fontWeight: 600 }}>{w.name}</td>
-                <td style={{ padding: '15px', color: '#555' }}>{w.location}</td>
-                <td style={{ padding: '15px' }}>{w.capacity}</td>
-                <td style={{ padding: '15px', color: '#2f855a' }}>{w.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: 1200, margin: '0 auto 30px' }}>
+        <h2 className="section-title" style={{ margin: 0 }}>Warehouses</h2>
+        <button onClick={openAdd} className="learn-btn" style={{ padding: '12px 24px', fontSize: 14 }}>+ Add Warehouse</button>
       </div>
+
+      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 25, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {warehouses.map(w => {
+          const color = capacityColor(w.capacity)
+          const bg = capacityBg(w.capacity)
+          return (
+            <div key={w.id} className="card" style={{
+              padding: '25px', textAlign: 'left', width: 320, position: 'relative',
+              opacity: w.status === 'Inactive' ? 0.6 : 1
+            }}>
+              <div style={{ position: 'absolute', top: 15, right: 15, display: 'flex', gap: 8 }}>
+                <button onClick={() => openEdit(w)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: 2 }}>✏️</button>
+                <button onClick={() => deleteWh(w)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: 2 }}>🗑️</button>
+              </div>
+
+              <h3 style={{ color: '#1a365d', margin: '0 0 6px', fontSize: 18 }}>{w.name}</h3>
+              <p style={{ fontSize: 13, color: '#718096', margin: '0 0 15px' }}>📍 {w.location}</p>
+
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
+                  <span style={{ color: '#555' }}>Capacity</span>
+                  <span style={{ color, fontWeight: 700 }}>{w.capacity}%</span>
+                </div>
+                <div style={{ height: 10, background: '#edf2f7', borderRadius: 5, overflow: 'hidden' }}>
+                  <div style={{ width: `${w.capacity}%`, height: '100%', background: color, borderRadius: 5, transition: 'width 0.8s ease' }}></div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 13, marginBottom: 12 }}>
+                <div><span style={{ color: '#888' }}>Manager:</span><br /><span style={{ fontWeight: 600 }}>{w.manager}</span></div>
+                <div><span style={{ color: '#888' }}>Stock Items:</span><br /><span style={{ fontWeight: 600 }}>{w.stockItems.toLocaleString()}</span></div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{
+                  padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600,
+                  background: w.status === 'Active' ? '#2f855a20' : '#e53e3e20',
+                  color: w.status === 'Active' ? '#2f855a' : '#e53e3e'
+                }}>{w.status}</span>
+                <button onClick={() => toggleStatus(w.id)} style={{
+                  background: 'none', border: '1px solid #e2e8f0', borderRadius: 6,
+                  padding: '4px 10px', cursor: 'pointer', fontSize: 12, color: '#555'
+                }}>{w.status === 'Active' ? 'Deactivate' : 'Activate'}</button>
+                <button onClick={() => openTransfer(w)} style={{
+                  background: '#2b6cb0', color: 'white', border: 'none', borderRadius: 6,
+                  padding: '4px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 600
+                }}>Transfer</button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <Modal open={showModal} onClose={() => setShowModal(false)} title={editWh ? 'Edit Warehouse' : 'Add Warehouse'}>
+        <form onSubmit={handleSubmit}>
+          <div style={{ display: 'grid', gap: 16 }}>
+            {[
+              { label: 'Warehouse Name', key: 'name' },
+              { label: 'Location', key: 'location' },
+              { label: 'Manager Name', key: 'manager' },
+            ].map(f => (
+              <div key={f.key}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1a365d', marginBottom: 4 }}>{f.label}</label>
+                <input
+                  value={form[f.key]}
+                  onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: 6,
+                    border: errors[f.key] ? '2px solid #e53e3e' : '1px solid #e2e8f0',
+                    fontSize: 14, outline: 'none'
+                  }}
+                />
+                {errors[f.key] && <span style={{ color: '#e53e3e', fontSize: 12 }}>{errors[f.key]}</span>}
+              </div>
+            ))}
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1a365d', marginBottom: 4 }}>Capacity % ({form.capacity}%)</label>
+              <input type="range" min="0" max="100" value={form.capacity}
+                onChange={e => setForm({ ...form, capacity: e.target.value })} style={{ width: '100%' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1a365d', marginBottom: 4 }}>Stock Items Count</label>
+              <input type="number" min="0" value={form.stockItems}
+                onChange={e => setForm({ ...form, stockItems: e.target.value })}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid #e2e8f0', fontSize: 14, outline: 'none' }} />
+            </div>
+          </div>
+          <div style={{ marginTop: 20, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button type="button" onClick={() => setShowModal(false)} style={{
+              padding: '10px 24px', borderRadius: 25, border: '1px solid #e2e8f0',
+              background: 'white', cursor: 'pointer', fontSize: 14
+            }}>Cancel</button>
+            <button type="submit" className="learn-btn" style={{ padding: '10px 24px', fontSize: 14 }}>
+              {editWh ? 'Update' : 'Add Warehouse'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal open={transferModal} onClose={() => setTransferModal(false)} title={`Transfer Stock from ${transferFrom?.name || ''}`}>
+        <form onSubmit={handleTransfer}>
+          <div style={{ display: 'grid', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1a365d', marginBottom: 4 }}>From</label>
+              <input value={transferFrom?.name || ''} disabled style={{
+                width: '100%', padding: '10px 12px', borderRadius: 6,
+                border: '1px solid #e2e8f0', fontSize: 14, background: '#f7fafc'
+              }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1a365d', marginBottom: 4 }}>To Warehouse</label>
+              <select value={transfer.toId} onChange={e => setTransfer({ ...transfer, toId: e.target.value })}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid #e2e8f0', fontSize: 14, outline: 'none', background: 'white' }}>
+                <option value="">Select destination...</option>
+                {warehouses.filter(w => w.id !== transfer.fromId).map(w => (
+                  <option key={w.id} value={w.id}>{w.name} ({w.location})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1a365d', marginBottom: 4 }}>Item Name</label>
+              <input value={transfer.itemName} onChange={e => setTransfer({ ...transfer, itemName: e.target.value })}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid #e2e8f0', fontSize: 14, outline: 'none' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1a365d', marginBottom: 4 }}>Quantity</label>
+              <input type="number" min="1" value={transfer.qty} onChange={e => setTransfer({ ...transfer, qty: e.target.value })}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid #e2e8f0', fontSize: 14, outline: 'none' }} />
+            </div>
+          </div>
+          <div style={{ marginTop: 20, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button type="button" onClick={() => setTransferModal(false)} style={{
+              padding: '10px 24px', borderRadius: 25, border: '1px solid #e2e8f0',
+              background: 'white', cursor: 'pointer', fontSize: 14
+            }}>Cancel</button>
+            <button type="submit" className="learn-btn" style={{ padding: '10px 24px', fontSize: 14 }}>Transfer</button>
+          </div>
+        </form>
+      </Modal>
     </section>
   )
 }

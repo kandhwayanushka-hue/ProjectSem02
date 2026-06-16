@@ -1,4 +1,6 @@
-.vercel
-server/node_modules
-server/invento.db
+node_modules/
+server/node_modules/
+server/invento.db*
+dist/
 .env
+.vercel

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAnimatedCounter } from '../hooks/useAnimatedCounter'
 import { useNotification } from '../context/NotificationContext'
 import useSocket from '../hooks/useSocket'
@@ -13,12 +14,19 @@ const statusColor = (s) => {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const [data, setData] = useState(null)
   const [showAllOrders, setShowAllOrders] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState(null)
+  const [hoveredBar, setHoveredBar] = useState(null)
+  const dashRef = useRef(null)
   const { addToast } = useNotification()
 
   const loadData = () => {
-    api.get('/dashboard').then(({ data }) => setData(data)).catch(() => {})
+    api.get('/dashboard').then(({ data }) => {
+      setData(data)
+      setLastUpdated(new Date())
+    }).catch(() => {})
   }
 
   useEffect(() => { loadData() }, [])
@@ -41,27 +49,41 @@ export default function Dashboard() {
   }
 
   const stats = [
-    { label: 'Total Products', value: products, color: '#2b6cb0', icon: '📦' },
-    { label: 'Low Stock Items', value: lowStock, color: '#e53e3e', icon: '⚠️' },
-    { label: 'Pending Orders', value: orders, color: '#dd6b20', icon: '📋' },
-    { label: 'Active Suppliers', value: suppliers, color: '#2f855a', icon: '🏭' },
+    { label: 'Total Products', value: products, color: '#2b6cb0', icon: '📦', path: '/products' },
+    { label: 'Low Stock Items', value: lowStock, color: '#e53e3e', icon: '⚠️', path: '/products' },
+    { label: 'Pending Orders', value: orders, color: '#dd6b20', icon: '📋', path: '/orders' },
+    { label: 'Active Suppliers', value: suppliers, color: '#2f855a', icon: '🏭', path: '/suppliers' },
   ]
+
+  const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const chartMonths = data.monthlySales?.length
+    ? data.monthlySales.map(m => ({ label: monthLabels[parseInt(m.month) - 1] || m.month, v: Math.min(Math.round((m.sales / 1000) * 5), 100) }))
+    : [{ label: 'Jan', v: 65 }, { label: 'Feb', v: 72 }, { label: 'Mar', v: 80 }, { label: 'Apr', v: 68 }, { label: 'May', v: 85 }, { label: 'Jun', v: 90 }]
 
   const displayOrders = showAllOrders ? data.recentOrders : data.recentOrders.slice(0, 3)
 
   return (
-    <section style={{ padding: '40px', background: '#f7fafc', minHeight: '80vh' }}>
+    <section ref={dashRef} style={{ padding: '40px', background: '#f7fafc', minHeight: '80vh' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: 1200, margin: '0 auto 30px', flexWrap: 'wrap', gap: 10 }}>
-        <h2 className="section-title" style={{ margin: 0 }}>Dashboard</h2>
+        <div>
+          <h2 className="section-title" style={{ margin: 0, textAlign: 'left' }}>Dashboard</h2>
+          {lastUpdated && (
+            <p style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+              Last updated: {lastUpdated.toLocaleTimeString()}
+              <span style={{ display: 'inline-block', width: 8, height: 8, background: '#2f855a', borderRadius: '50%', marginLeft: 8, animation: 'pulse 2s infinite' }}></span>
+            </p>
+          )}
+        </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={() => addToast('Report generated successfully!', 'success')} className="learn-btn" style={{ padding: '10px 20px', fontSize: 14 }}>Generate Report</button>
-          <button onClick={() => { loadData(); addToast('Dashboard refreshed!', 'info') }} className="learn-btn" style={{ padding: '10px 20px', fontSize: 14, background: '#2b6cb0' }}>Refresh</button>
+          <button onClick={() => { loadData(); addToast('Dashboard refreshed!', 'info') }} className="learn-btn" style={{ padding: '10px 20px', fontSize: 14, background: '#2b6cb0' }}>Refresh ↻</button>
         </div>
       </div>
 
       <div className="cards" style={{ maxWidth: 1200, margin: '0 auto' }}>
         {stats.map((s, i) => (
-          <div key={i} className="card" style={{ padding: '30px', textAlign: 'center', borderTop: `4px solid ${s.color}` }}>
+          <div key={i} className="card dash-stat-card" onClick={() => navigate(s.path)}
+            style={{ padding: '30px', textAlign: 'center', borderTop: `4px solid ${s.color}`, cursor: 'pointer', animation: `fadeIn 0.5s ease ${i * 0.1}s both` }}>
             <div style={{ fontSize: 40, marginBottom: 10 }}>{s.icon}</div>
             <h3 style={{ fontSize: 44, color: s.color, margin: '0 0 5px' }}>{s.value.toLocaleString()}</h3>
             <p style={{ fontSize: 16, color: '#555', fontWeight: 500 }}>{s.label}</p>
@@ -72,18 +94,25 @@ export default function Dashboard() {
       <div style={{ maxWidth: 1200, margin: '40px auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 25 }}>
         <div style={{ background: 'white', borderRadius: 10, padding: 25, boxShadow: '0 5px 15px rgba(0,0,0,0.1)' }}>
           <h3 style={{ color: '#1a365d', marginBottom: 15 }}>Monthly Revenue</h3>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', height: 160 }}>
-            {[
-              { label: 'Jan', v: 65 }, { label: 'Feb', v: 72 }, { label: 'Mar', v: 80 },
-              { label: 'Apr', v: 68 }, { label: 'May', v: 85 }, { label: 'Jun', v: 90 },
-            ].map((m, i) => (
-              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{ width: '100%', background: '#2b6cb0', borderRadius: '6px 6px 0 0', height: `${m.v}%`, opacity: 0.7 + i * 0.05, minHeight: 16, transition: 'height 1s ease' }}></div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', height: 160, position: 'relative' }}>
+            {chartMonths.map((m, i) => (
+              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}
+                onMouseEnter={() => setHoveredBar(i)} onMouseLeave={() => setHoveredBar(null)}>
+                <div style={{
+                  width: '100%', background: hoveredBar === i ? '#1a365d' : '#2b6cb0',
+                  borderRadius: '6px 6px 0 0', height: `${m.v}%`, opacity: 0.7 + i * 0.05,
+                  minHeight: 16, transition: 'all 0.3s ease', cursor: 'pointer'
+                }}></div>
+                {hoveredBar === i && (
+                  <div style={{ position: 'absolute', bottom: '100%', background: '#1a365d', color: 'white', padding: '4px 10px', borderRadius: 6, fontSize: 12, whiteSpace: 'nowrap', zIndex: 10, marginBottom: 4 }}>
+                    ${data.monthlySales?.[i]?.sales?.toFixed(2) || '0.00'}
+                  </div>
+                )}
                 <span style={{ fontSize: 11, color: '#555', marginTop: 6 }}>{m.label}</span>
               </div>
             ))}
           </div>
-          <p style={{ fontSize: 14, color: '#888', marginTop: 15 }}>Revenue: ${revenue.toLocaleString()} this month</p>
+          <p style={{ fontSize: 14, color: '#888', marginTop: 15 }}>Revenue: <strong style={{ color: '#2f855a' }}>${revenue.toLocaleString()}</strong> this month</p>
         </div>
 
         <div style={{ background: 'white', borderRadius: 10, padding: 25, boxShadow: '0 5px 15px rgba(0,0,0,0.1)' }}>

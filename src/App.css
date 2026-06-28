@@ -279,6 +279,19 @@ body {
   to { transform: scale(1); opacity: 1; }
 }
 
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.dash-stat-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+}
+.dash-stat-card:hover {
+  transform: translateY(-8px) !important;
+  box-shadow: 0 16px 30px rgba(0,0,0,0.15) !important;
+}
+
 .section-title {
   font-size: 36px;
   margin-bottom: 30px;
